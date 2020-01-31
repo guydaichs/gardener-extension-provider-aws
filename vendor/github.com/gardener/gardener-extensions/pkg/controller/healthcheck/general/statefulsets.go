@@ -22,7 +22,7 @@ import (
 
 	"github.com/gardener/gardener/pkg/utils/kubernetes/health"
 	"github.com/go-logr/logr"
-	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -37,7 +37,7 @@ type StatefulSetHealthChecker struct {
 	checkType   StatefulSetCheckType
 }
 
-// StatefulSetCheckType in which cluster the check will be executed
+// DeploymentCheckType in which cluster the check will be executed
 type StatefulSetCheckType string
 
 const (
@@ -84,7 +84,7 @@ func (healthChecker *StatefulSetHealthChecker) DeepCopy() healthcheck.HealthChec
 
 // Check executes the health check
 func (healthChecker *StatefulSetHealthChecker) Check(ctx context.Context, request types.NamespacedName) (*healthcheck.SingleCheckResult, error) {
-	statefulSet := &appsv1.StatefulSet{}
+	statefulSet := &v1.StatefulSet{}
 
 	var err error
 	if healthChecker.checkType == StatefulSetCheckTypeSeed {
@@ -111,7 +111,7 @@ func (healthChecker *StatefulSetHealthChecker) Check(ctx context.Context, reques
 	}, nil
 }
 
-func statefulSetIsHealthy(statefulSet *appsv1.StatefulSet) (bool, *string, error) {
+func statefulSetIsHealthy(statefulSet *v1.StatefulSet) (bool, *string, error) {
 	if err := health.CheckStatefulSet(statefulSet); err != nil {
 		reason := "StatefulSetUnhealthy"
 		err := fmt.Errorf("statefulSet %s in namespace %s is unhealthy: %v", statefulSet.Name, statefulSet.Namespace, err)

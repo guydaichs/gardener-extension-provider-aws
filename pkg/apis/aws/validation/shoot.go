@@ -59,6 +59,12 @@ func ValidateWorkers(workers []core.Worker, zones []apisaws.Zone, fldPath *field
 			continue
 		}
 
+		if worker.DataVolumes != nil {
+			if len(worker.DataVolumes) > 11 {
+				allErrs = append(allErrs, field.Required(fldPath.Index(i).Child("dataVolumes"), "at most 11 data volumes may be specified"))
+			}
+		}
+
 		allErrs = append(allErrs, validateZones(worker.Zones, awsZones, fldPath.Index(i).Child("zones"))...)
 	}
 

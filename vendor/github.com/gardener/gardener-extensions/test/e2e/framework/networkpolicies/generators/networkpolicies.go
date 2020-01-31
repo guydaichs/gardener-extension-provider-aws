@@ -129,6 +129,7 @@ func (g *genTest) Imports(c *generator.Context) (imports []string) {
 		`k8s.io/apimachinery/pkg/labels`,
 		`k8s.io/apimachinery/pkg/types`,
 		`k8s.io/apimachinery/pkg/util/sets`,
+		`utilclient "github.com/gardener/gardener/pkg/utils/kubernetes/client"`,
 		`metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"`,
 		`networkingv1 "k8s.io/api/networking/v1"`,
 		`networkpolicies "github.com/gardener/gardener-extensions/test/e2e/framework/networkpolicies"`,
@@ -574,7 +575,7 @@ var setBody = `
 
 		getFirstNodeInternalIP := func(ctx context.Context, cl kubernetes.Interface) (string, error) {
 			nodes := &corev1.NodeList{}
-			err := cl.Client().List(ctx, nodes, client.Limit(1))
+			err := cl.Client().List(ctx, nodes, utilclient.Limit(1))
 			if err != nil {
 				return "", err
 			}

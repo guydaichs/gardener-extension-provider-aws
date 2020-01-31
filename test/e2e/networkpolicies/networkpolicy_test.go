@@ -32,6 +32,7 @@ import (
 	"github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/logger"
+	utilclient "github.com/gardener/gardener/pkg/utils/kubernetes/client"
 	gardenerframework "github.com/gardener/gardener/test/integration/framework"
 	shootsframework "github.com/gardener/gardener/test/integration/shoots"
 	. "github.com/onsi/ginkgo"
@@ -203,7 +204,7 @@ var _ = Describe("Network Policy Testing", func() {
 				ShootVersionConstraint: "< 1.13",
 				SeedClusterConstraints: sets.String(nil)},
 			Ports: []networkpolicies.Port{
-				networkpolicies.Port{
+				{
 					Port: 10253,
 					Name: ""}},
 			ExpectedPolicies: sets.String{
@@ -234,7 +235,7 @@ var _ = Describe("Network Policy Testing", func() {
 				ShootVersionConstraint: ">= 1.13",
 				SeedClusterConstraints: sets.String(nil)},
 			Ports: []networkpolicies.Port{
-				networkpolicies.Port{
+				{
 					Port: 10258,
 					Name: ""}},
 			ExpectedPolicies: sets.String{
@@ -287,10 +288,10 @@ var _ = Describe("Network Policy Testing", func() {
 				ShootVersionConstraint: "",
 				SeedClusterConstraints: sets.String(nil)},
 			Ports: []networkpolicies.Port{
-				networkpolicies.Port{
+				{
 					Port: 9200,
 					Name: "http"},
-				networkpolicies.Port{
+				{
 					Port: 9114,
 					Name: "metrics"}},
 			ExpectedPolicies: sets.String{
@@ -331,7 +332,7 @@ var _ = Describe("Network Policy Testing", func() {
 				ShootVersionConstraint: "",
 				SeedClusterConstraints: sets.String(nil)},
 			Ports: []networkpolicies.Port{
-				networkpolicies.Port{
+				{
 					Port: 2379,
 					Name: ""}},
 			ExpectedPolicies: sets.String{
@@ -362,7 +363,7 @@ var _ = Describe("Network Policy Testing", func() {
 				ShootVersionConstraint: "",
 				SeedClusterConstraints: sets.String(nil)},
 			Ports: []networkpolicies.Port{
-				networkpolicies.Port{
+				{
 					Port: 2379,
 					Name: ""}},
 			ExpectedPolicies: sets.String{
@@ -425,7 +426,7 @@ var _ = Describe("Network Policy Testing", func() {
 				ShootVersionConstraint: "",
 				SeedClusterConstraints: sets.String(nil)},
 			Ports: []networkpolicies.Port{
-				networkpolicies.Port{
+				{
 					Port: 3000,
 					Name: ""}},
 			ExpectedPolicies: sets.String{
@@ -453,7 +454,7 @@ var _ = Describe("Network Policy Testing", func() {
 				ShootVersionConstraint: "",
 				SeedClusterConstraints: sets.String(nil)},
 			Ports: []networkpolicies.Port{
-				networkpolicies.Port{
+				{
 					Port: 5601,
 					Name: ""}},
 			ExpectedPolicies: sets.String{
@@ -482,7 +483,7 @@ var _ = Describe("Network Policy Testing", func() {
 				ShootVersionConstraint: "",
 				SeedClusterConstraints: sets.String(nil)},
 			Ports: []networkpolicies.Port{
-				networkpolicies.Port{
+				{
 					Port: 443,
 					Name: ""}},
 			ExpectedPolicies: sets.String{
@@ -514,7 +515,7 @@ var _ = Describe("Network Policy Testing", func() {
 				ShootVersionConstraint: "< 1.13",
 				SeedClusterConstraints: sets.String(nil)},
 			Ports: []networkpolicies.Port{
-				networkpolicies.Port{
+				{
 					Port: 10252,
 					Name: ""}},
 			ExpectedPolicies: sets.String{
@@ -547,7 +548,7 @@ var _ = Describe("Network Policy Testing", func() {
 				ShootVersionConstraint: ">= 1.13",
 				SeedClusterConstraints: sets.String(nil)},
 			Ports: []networkpolicies.Port{
-				networkpolicies.Port{
+				{
 					Port: 10257,
 					Name: ""}},
 			ExpectedPolicies: sets.String{
@@ -580,7 +581,7 @@ var _ = Describe("Network Policy Testing", func() {
 				ShootVersionConstraint: "< 1.13",
 				SeedClusterConstraints: sets.String(nil)},
 			Ports: []networkpolicies.Port{
-				networkpolicies.Port{
+				{
 					Port: 10251,
 					Name: ""}},
 			ExpectedPolicies: sets.String{
@@ -610,7 +611,7 @@ var _ = Describe("Network Policy Testing", func() {
 				ShootVersionConstraint: ">= 1.13",
 				SeedClusterConstraints: sets.String(nil)},
 			Ports: []networkpolicies.Port{
-				networkpolicies.Port{
+				{
 					Port: 10259,
 					Name: ""}},
 			ExpectedPolicies: sets.String{
@@ -640,7 +641,7 @@ var _ = Describe("Network Policy Testing", func() {
 				ShootVersionConstraint: "",
 				SeedClusterConstraints: sets.String(nil)},
 			Ports: []networkpolicies.Port{
-				networkpolicies.Port{
+				{
 					Port: 8080,
 					Name: ""}},
 			ExpectedPolicies: sets.String{
@@ -670,7 +671,7 @@ var _ = Describe("Network Policy Testing", func() {
 				ShootVersionConstraint: "",
 				SeedClusterConstraints: sets.String(nil)},
 			Ports: []networkpolicies.Port{
-				networkpolicies.Port{
+				{
 					Port: 8080,
 					Name: ""}},
 			ExpectedPolicies: sets.String{
@@ -700,7 +701,7 @@ var _ = Describe("Network Policy Testing", func() {
 				ShootVersionConstraint: "",
 				SeedClusterConstraints: sets.String(nil)},
 			Ports: []networkpolicies.Port{
-				networkpolicies.Port{
+				{
 					Port: 10258,
 					Name: ""}},
 			ExpectedPolicies: sets.String{
@@ -737,7 +738,7 @@ var _ = Describe("Network Policy Testing", func() {
 				ShootVersionConstraint: "",
 				SeedClusterConstraints: sets.String(nil)},
 			Ports: []networkpolicies.Port{
-				networkpolicies.Port{
+				{
 					Port: 9090,
 					Name: ""}},
 			ExpectedPolicies: sets.String{
@@ -826,7 +827,7 @@ var _ = Describe("Network Policy Testing", func() {
 
 		getFirstNodeInternalIP := func(ctx context.Context, cl kubernetes.Interface) (string, error) {
 			nodes := &corev1.NodeList{}
-			err := cl.Client().List(ctx, nodes, client.Limit(1))
+			err := cl.Client().List(ctx, nodes, utilclient.Limit(1))
 			if err != nil {
 				return "", err
 			}

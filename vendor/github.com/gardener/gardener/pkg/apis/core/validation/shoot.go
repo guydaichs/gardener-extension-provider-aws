@@ -735,15 +735,61 @@ func ValidateWorker(worker core.Worker, fldPath *field.Path) field.ErrorList {
 		}
 	}
 
+	volumeSizeRegex, _ := regexp.Compile(`^(\d)+Gi$`)
+
 	if worker.Volume != nil {
-		volumeSizeRegex, _ := regexp.Compile(`^(\d)+Gi$`)
 		if !volumeSizeRegex.MatchString(worker.Volume.Size) {
 			allErrs = append(allErrs, field.Invalid(fldPath.Child("volume", "size"), worker.Volume.Size, fmt.Sprintf("volume size must match the regex %s", volumeSizeRegex)))
 		}
 	}
 
+	if worker.DataVolumes != nil {
+		var volumeNames = make(map[string]int)
+		if len(worker.DataVolumes) > 0 && worker.Volume == nil {
+			allErrs = append(allErrs, field.Required(fldPath.Child("volume"), fmt.Sprintf("a worker volume must be defined if data volumes are defined")))
+		}
+		for idx, volume := range worker.DataVolumes {
+			idxPath := fldPath.Child("dataVolumes").Index(idx)
+			if volume.Name == nil {
+				allErrs = append(allErrs, field.Required(idxPath.Child("name"), fmt.Sprintf("data volume name is required")))
+			} else {
+				volName := *volume.Name
+				allErrs = append(allErrs, validateDNS1123Label(volName, idxPath.Child("name"))...)
+				maxVolumeNameLength := 15
+				if len(volName) > maxVolumeNameLength {
+					allErrs = append(allErrs, field.TooLong(idxPath.Child("name"), volName, maxVolumeNameLength))
+				}
+				if _, keyExist := volumeNames[volName]; keyExist {
+					volumeNames[volName]++
+					allErrs = append(allErrs, field.Duplicate(idxPath.Child("name"), volName))
+				} else {
+					volumeNames[volName] = 1
+				}
+				if !volumeSizeRegex.MatchString(volume.Size) {
+					allErrs = append(allErrs, field.Invalid(idxPath.Child("size"), volume.Size, fmt.Sprintf("data volume size must match the regex %s", volumeSizeRegex)))
+				}
+			}
+		}
+
+	}
+
+	if worker.KubeletDataVolumeName != nil {
+		found := false
+		for _, volume := range worker.DataVolumes {
+			if *volume.Name == *worker.KubeletDataVolumeName {
+				found = true
+			}
+		}
+		if !found {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("kubeletDataVolumeName"), worker.KubeletDataVolumeName, fmt.Sprintf("KubeletDataVolumeName refers to unrecognized data volume %s", *worker.KubeletDataVolumeName)))
+		}
+	}
+
 	return allErrs
 }
+
+// PodPIDsLimitMinimum is a constant for the minimum value for the podPIDsLimit field.
+const PodPIDsLimitMinimum int64 = 100
 
 // ValidateKubeletConfig validates the KubeletConfig object.
 func ValidateKubeletConfig(kubeletConfig core.KubeletConfig, fldPath *field.Path) field.ErrorList {
@@ -752,15 +798,17 @@ func ValidateKubeletConfig(kubeletConfig core.KubeletConfig, fldPath *field.Path
 	if kubeletConfig.MaxPods != nil {
 		allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(*kubeletConfig.MaxPods), fldPath.Child("maxPods"))...)
 	}
-
+	if value := kubeletConfig.PodPIDsLimit; value != nil {
+		if *value < PodPIDsLimitMinimum {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("podPIDsLimit"), *value, fmt.Sprintf("podPIDsLimit value must be at least %d", PodPIDsLimitMinimum)))
+		}
+	}
 	if kubeletConfig.EvictionPressureTransitionPeriod != nil {
 		allErrs = append(allErrs, ValidatePositiveDuration(kubeletConfig.EvictionPressureTransitionPeriod, fldPath.Child("evictionPressureTransitionPeriod"))...)
 	}
-
 	if kubeletConfig.EvictionMaxPodGracePeriod != nil {
 		allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(*kubeletConfig.EvictionMaxPodGracePeriod), fldPath.Child("evictionMaxPodGracePeriod"))...)
 	}
-
 	if kubeletConfig.EvictionHard != nil {
 		allErrs = append(allErrs, validateKubeletConfigEviction(kubeletConfig.EvictionHard, fldPath.Child("evictionHard"))...)
 	}
