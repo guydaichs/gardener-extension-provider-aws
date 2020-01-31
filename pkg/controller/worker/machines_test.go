@@ -103,6 +103,8 @@ var _ = Describe("Machines", func() {
 				volumeSize int
 				iops       int64
 
+				nameVol1   string
+				nameVol2   string
 				namePool1           string
 				minPool1            int
 				maxPool1            int
@@ -154,6 +156,9 @@ var _ = Describe("Machines", func() {
 				volumeType = "normal"
 				volumeSize = 20
 				iops = 400
+
+				nameVol1 = "vol-1"
+				nameVol2 = "vol-2"
 
 				namePool1 = "pool-1"
 				minPool1 = 5
@@ -294,6 +299,20 @@ var _ = Describe("Machines", func() {
 									Type: &volumeType,
 									Size: fmt.Sprintf("%dGi", volumeSize),
 								},
+								DataVolumes: []extensionsv1alpha1.Volume{
+									{
+										Name: &nameVol1,
+										Type: &volumeType,
+										Size: fmt.Sprintf("%dGi", volumeSize),
+										Encrypted: true,
+									},
+									{
+										Name: &nameVol2,
+										Type: &volumeType,
+										Size: fmt.Sprintf("%dGi", volumeSize),
+										Encrypted: false,
+									},
+								},
 								Zones: []string{
 									zone1,
 									zone2,
@@ -361,6 +380,8 @@ var _ = Describe("Machines", func() {
 								"ebs": map[string]interface{}{
 									"volumeSize": volumeSize,
 									"volumeType": volumeType,
+									"encrypted": false,
+									"deleteOnTermination": true,
 								},
 							},
 						},
@@ -394,14 +415,35 @@ var _ = Describe("Machines", func() {
 
 						machineClassPool1BlockDevices = []map[string]interface{}{
 							{
+								"deviceName": "/root",
 								"ebs": map[string]interface{}{
 									"volumeSize": volumeSize,
 									"volumeType": volumeType,
 									"iops":       iops,
+									"encrypted": false,
+									"deleteOnTermination": true,
+								},
+							},
+							{
+								"deviceName": "/dev/sdf",
+								"ebs": map[string]interface{}{
+									"volumeSize": volumeSize,
+									"volumeType": volumeType,
+									"encrypted": true,
+									"deleteOnTermination": true,
+								},
+							},
+							{
+								"deviceName": "/dev/sdg",
+								"ebs": map[string]interface{}{
+									"volumeSize": volumeSize,
+									"volumeType": volumeType,
+									"encrypted": false,
+									"deleteOnTermination": true,
 								},
 							},
 						}
-					)
+						)
 
 					machineClassPool1Zone1["blockDevices"] = machineClassPool1BlockDevices
 					machineClassPool1Zone2["blockDevices"] = machineClassPool1BlockDevices

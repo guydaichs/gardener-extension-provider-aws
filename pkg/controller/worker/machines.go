@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"sort"
 
 	apisaws "github.com/gardener/gardener-extension-provider-aws/pkg/apis/aws"
 	awsapi "github.com/gardener/gardener-extension-provider-aws/pkg/apis/aws"
@@ -130,19 +131,46 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 			}
 		}
 
-		volumeSize, err := worker.DiskSize(pool.Volume.Size)
+		var blockDevices []map[string]interface{}
+
+		ebs, err := getEbsForVolume(*pool.Volume)
 		if err != nil {
 			return err
-		}
-		ebs := map[string]interface{}{
-			"volumeSize": volumeSize,
-		}
-		if pool.Volume.Type != nil {
-			ebs["volumeType"] = *pool.Volume.Type
 		}
 		if workerConfig.Volume != nil && workerConfig.Volume.IOPS != nil {
 			ebs["iops"] = *workerConfig.Volume.IOPS
 		}
+		rootDevice := map[string]interface{}{
+			"ebs":        ebs,
+		}
+		dataVolumes := pool.DataVolumes
+		if dataVolumes != nil {
+			// need to identify the root device if more than once device is attached
+			rootDevice["deviceName"] = "/root"
+			// sort volumes for consistent device naming
+			sort.Slice(dataVolumes, func(i, j int) bool {
+				return *dataVolumes[i].Name < *dataVolumes[j].Name
+			})
+		}
+
+		blockDevices = append(blockDevices, rootDevice)
+
+		for i, vol := range dataVolumes {
+			ebs, err := getEbsForVolume(vol)
+			if err != nil {
+				return err
+			}
+			deviceName, err := getDeviceNameForIndex(i)
+			if err != nil {
+				return err
+			}
+			device := map[string]interface{}{
+				"deviceName": deviceName,
+				"ebs":        ebs,
+			}
+			blockDevices = append(blockDevices, device)
+		}
+
 
 		for zoneIndex, zone := range pool.Zones {
 			nodesSubnet, err := awsapihelper.FindSubnetForPurposeAndZone(infrastructureStatus.VPC.Subnets, awsapi.PurposeNodes, zone)
@@ -169,11 +197,7 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 				"secret": map[string]interface{}{
 					"cloudConfig": string(pool.UserData),
 				},
-				"blockDevices": []map[string]interface{}{
-					{
-						"ebs": ebs,
-					},
-				},
+				"blockDevices": blockDevices,
 			}
 
 			var (
@@ -210,4 +234,31 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 	w.machineImages = machineImages
 
 	return nil
+}
+
+func getEbsForVolume(volume v1alpha1extensions.Volume) (map[string]interface{}, error) {
+	volumeSize, err := worker.DiskSize(volume.Size)
+	if err != nil {
+		return nil, err
+	}
+	ebs := map[string]interface{}{
+		"volumeSize": volumeSize,
+	}
+	if volume.Type != nil {
+		ebs["volumeType"] = *volume.Type
+	}
+	// default false
+	ebs["encrypted"] = volume.Encrypted
+	ebs["deleteOnTermination"] = true
+	return ebs, nil
+}
+
+func getDeviceNameForIndex(index int) (string, error){
+	// AWS device naming https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/device_naming.html
+	deviceNamePrefix := "/dev/sd"
+	deviceNameSuffix := "fghijklmnop"
+	if index > len(deviceNameSuffix) {
+		return "", fmt.Errorf("unsupported data volume number")
+	}
+	return deviceNamePrefix + deviceNameSuffix[index : index+1], nil
 }
